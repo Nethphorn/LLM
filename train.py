@@ -52,7 +52,17 @@ class BigramLanguageModel(nn.Module):
             loss = F.cross_entropy(logits, targets)
         return logits, loss
 
+    def generate(self, idx, max_new_tokens):
+        for _ in range(max_new_tokens):
+            logits, loss = self(idx)
+            logits = logits[:, -1, :]
+            probs = F.softmax(logits, dim=-1)
+            idx_next = torch.multinomial(probs, num_samples=1)
+            idx = torch.cat((idx, idx_next), dim=1)
+        return idx
 
+
+# Get a batch of data
 xb, yb = get_batch('train')
 print('\ninputs (x):')
 print(xb.shape)
@@ -61,7 +71,15 @@ print('\ntargets (y):')
 print(yb.shape)
 print(yb)
 
+# Initialize the model
 m = BigramLanguageModel(vocab_size)
 logits, loss = m(xb, yb)
 print(logits.shape)
 print(loss)
+
+# Generate text
+idx = torch.zeros((1, 1), dtype=torch.long)
+generated_idx = m.generate(idx, max_new_tokens=100)
+generated_list = generated_idx[0].tolist()
+generated_string = decode(generated_list)
+print(generated_string)
