@@ -43,7 +43,14 @@ class BigramLanguageModel(nn.Module):
 
     def forward(self, idx, targets=None):
         logits = self.token_embedding_table(idx)
-        return logits
+        if targets is None:
+            loss = None
+        else:
+            B, T, C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = targets.view(B*T)
+            loss = F.cross_entropy(logits, targets)
+        return logits, loss
 
 
 xb, yb = get_batch('train')
@@ -55,5 +62,6 @@ print(yb.shape)
 print(yb)
 
 m = BigramLanguageModel(vocab_size)
-logits = m(xb)
+logits, loss = m(xb, yb)
 print(logits.shape)
+print(loss)
